@@ -1,20 +1,16 @@
 import type { Connection, ConnectionContext, WSMessage } from "partyserver";
 import { Server, routePartykitRequest } from "partyserver";
 import type { EventData, EventDataMap } from "./types/event-data.type";
+import type { LobbyData } from "./types/lobby-data.type";
 
 type Env = {
 	MyServer: DurableObjectNamespace<MyServer>;
 };
 
-type Lobby = {
-	total: number;
-	from: Record<string, number>;
-};
-
 const FROM_FALLBACK_KEY = "?";
 
 export class MyServer extends Server<Env> {
-	lobby: Lobby = {
+	lobby: LobbyData = {
 		total: 0,
 		from: {},
 	};
