@@ -22,7 +22,7 @@ export const Board = () => {
 		: `Next Player: ${isXNext ? "X" : "O"}`;
 
 	return (
-		<div className="flex flex-col items-center gap-4">
+		<div className="flex flex-col items-center gap-4 h-screen justify-center">
 			<div className="text-xl font-semibold">{status}</div>
 			<div
 				className="grid grid-cols-3 gap-1 size-48"
