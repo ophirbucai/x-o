@@ -1,0 +1,54 @@
+import { createContext, useContext, useEffect, useRef, useState } from "react";
+import type { LobbyData } from "../types/lobby-data.type";
+import { useParty } from "./party.provider";
+import { filter } from "rxjs/operators";
+import { useStore } from "zustand/react";
+import { createStore } from "zustand";
+
+interface LobbyState {
+	lobby: LobbyData | null;
+}
+
+const createLobbyStore = () =>
+	createStore<LobbyState>(() => ({
+		lobby: null,
+	}));
+
+type LobbyStore = ReturnType<typeof createLobbyStore>;
+
+export const LobbyContext = createContext<LobbyStore | null>(null);
+
+export const LobbyProvider = ({ children }: { children: React.ReactNode }) => {
+	const store = useRef<LobbyStore>(null);
+	const { socket, message$ } = useParty();
+
+	if (!store.current) {
+		store.current = createLobbyStore();
+	}
+
+	useEffect(() => {
+		const subscription = message$
+			.pipe(filter((data) => data.type === "lobby"))
+			.subscribe(({ type, payload }) =>
+				store.current?.setState({ [type]: payload }),
+			);
+
+		socket.send("lobby");
+
+		return () => subscription.unsubscribe();
+	}, [socket.send, message$]);
+
+	return (
+		<LobbyContext.Provider value={store.current}>
+			{children}
+		</LobbyContext.Provider>
+	);
+};
+
+export function useLobbyStore<T>(selector: (store: LobbyState) => T): T {
+	const store = useContext(LobbyContext);
+	if (!store) {
+		throw new Error("useLobbyStore must be used within LobbyProvider");
+	}
+	return useStore(store, selector);
+}

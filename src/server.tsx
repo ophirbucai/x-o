@@ -45,7 +45,6 @@ export class MyServer extends Server<Env> {
 			},
 		};
 		connection.setState({ from });
-		this.send(connection, "lobby", this.lobby);
 		this.sendAll("lobby", this.lobby);
 	}
 

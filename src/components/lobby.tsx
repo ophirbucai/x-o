@@ -1,11 +1,15 @@
-import type { LobbyData } from "../types/lobby-data.type";
 import { countryCodeEmoji } from "../utils";
+import { useLobbyStore } from "../providers/lobby.provider";
 
-export const Lobby = ({ total, from }: LobbyData) => {
+export const Lobby = () => {
+	const lobby = useLobbyStore((state) => state.lobby);
+
+	if (!lobby) return "Loading...";
+
 	return (
 		<div>
-			{total} user{total !== 1 ? "s" : ""} online. (
-			{Object.entries(from || {})
+			{lobby.total} user{lobby.total !== 1 ? "s" : ""} online. (
+			{Object.entries(lobby.from || {})
 				.map(([from, count]) => {
 					return `${count} from ${countryCodeEmoji(from)}`;
 				})
