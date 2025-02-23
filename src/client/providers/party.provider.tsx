@@ -8,7 +8,12 @@ import {
 	useRef,
 } from "react";
 import { Subject } from "rxjs";
-import type { EventData, SendMethod, SendEvent, SendEventMap } from "../types";
+import type {
+	EventData,
+	SendMethod,
+	SendEvent,
+	SendEventMap,
+} from "../../types";
 import { getAuthToken } from "../utils/get-auth-token";
 
 const PartyContext = createContext<{

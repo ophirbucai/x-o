@@ -1,7 +1,7 @@
 import { countryCodeEmoji } from "../utils";
 import { useLobby } from "../providers/lobby.provider";
 import { Accordion, AccordionItem } from "@szhsin/react-accordion";
-import type { UserData } from "../types";
+import type { UserData } from "../../types";
 
 export const Lobby = () => {
 	const lobby = useLobby((state) => state.lobby);
@@ -41,13 +41,13 @@ export const Lobby = () => {
 						{lobby.ready.length > 0 ? (
 							<UsersList users={lobby.ready} />
 						) : (
-							<span className="text-xs">
+							<div className="text-xs p-1.5">
 								No users are ready,{" "}
 								<span className="underline underline-offset-2">
 									invite a friend
 								</span>
 								?
-							</span>
+							</div>
 						)}
 					</AccordionItem>
 				)}

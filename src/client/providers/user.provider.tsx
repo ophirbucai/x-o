@@ -5,17 +5,17 @@ import {
 	useEffect,
 	useRef,
 } from "react";
-import type { UserData } from "../types/event-data/_user-data.type";
 import { useStore } from "zustand/react";
 import { createStore } from "zustand";
 import { useParty } from "./party.provider";
 import { filter } from "rxjs";
-import type { SendMethod } from "../types";
+import type { SendMethod, UserData } from "../../types";
 
 interface UserState {
 	user: UserData | null;
 	renameUser: (name: string) => void;
 	updateReady: (state: boolean) => void;
+	refetchName: () => void;
 }
 
 const createUserStore = (send: typeof SendMethod) =>
@@ -23,6 +23,7 @@ const createUserStore = (send: typeof SendMethod) =>
 		user: null,
 		renameUser: (name: string) => send("rename_user", name),
 		updateReady: (state: boolean) => send("ready_user", state),
+		refetchName: () => send("get_user"),
 	}));
 
 type UserStore = ReturnType<typeof createUserStore>;
