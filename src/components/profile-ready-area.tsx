@@ -26,7 +26,6 @@ export const ProfileReadyArea = () => {
 				activeBoxShadow="0px 0px 1px 4px rgba(0, 0, 0, 0.2)"
 				height={16}
 				width={30}
-				defaultChecked={user?.ready}
 				checked={user?.ready ?? false}
 				disabled={!user}
 				onChange={toggleReady}
