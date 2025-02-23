@@ -1,8 +1,15 @@
 import type PartySocket from "partysocket";
 import usePartySocket from "partysocket/react";
-import { createContext, useCallback, useContext, useRef } from "react";
+import {
+	createContext,
+	useCallback,
+	useContext,
+	useEffect,
+	useRef,
+} from "react";
 import { Subject } from "rxjs";
 import type { EventData, SendMethod, SendEvent, SendEventMap } from "../types";
+import { getAuthToken } from "../utils/get-auth-token";
 
 const PartyContext = createContext<{
 	socket: PartySocket;
@@ -16,6 +23,9 @@ export const PartyProvider = ({ children }: { children: React.ReactNode }) => {
 	const socket = usePartySocket({
 		party: "my-server",
 		room: "room1",
+		query: async () => ({
+			token: await getAuthToken(),
+		}),
 		onMessage: (evt: MessageEvent<string>) =>
 			message$.next(JSON.parse(evt.data)),
 	});
@@ -31,6 +41,10 @@ export const PartyProvider = ({ children }: { children: React.ReactNode }) => {
 		},
 		[socket.send],
 	);
+
+	useEffect(() => {
+		return () => socket.close();
+	});
 
 	return (
 		<PartyContext value={{ socket, message$, send }}>{children}</PartyContext>

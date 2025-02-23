@@ -3,4 +3,7 @@ export type UserData = {
 	name: string | null;
 	from: string;
 	ready: boolean;
+	username: string;
 };
+
+export type RedactedUserData = Omit<UserData, "username">;
