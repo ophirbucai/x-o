@@ -1,3 +1,6 @@
+import type { Connection } from "partyserver";
+import type { UserData } from "../event-data";
+
 export type SendEventMap = {
 	rename_user: string;
 	ready_user: boolean;
@@ -8,6 +11,7 @@ export type SendEventMap = {
 export type SendEvent<T extends keyof SendEventMap = keyof SendEventMap> = {
 	type: T;
 	payload: SendEventMap[T];
+	connection: Connection<UserData>;
 };
 
 export declare function SendMethod<T extends keyof SendEventMap>(

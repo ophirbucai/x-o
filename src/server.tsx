@@ -1,11 +1,12 @@
 import type { Connection, ConnectionContext, WSMessage } from "partyserver";
 import { Server, routePartykitRequest } from "partyserver";
 import type {
-	EventData,
-	EventDataMap,
-	LobbyData,
 	SendEvent,
 	UserData,
+	Env,
+	ManagerDeps,
+	EventDataMap,
+	EventData,
 } from "./types";
 import { sign, verify } from "@tsndr/cloudflare-worker-jwt";
 import {
@@ -14,149 +15,81 @@ import {
 	nouns,
 } from "unique-username-generator";
 
-type Env = {
-	MyServer: DurableObjectNamespace<MyServer>;
-	SESSIONS: KVNamespace;
-	JWT_SECRET: string;
-};
+import { share, Subject } from "rxjs";
+import { LobbyManager } from "./server/managers/lobby-manager";
+import { UserManager } from "./server/managers/user-manager";
+import { isString } from "./server/utils/is-string";
 
 export class MyServer extends Server<Env> {
-	_lobby = {
-		users: new Map<string, UserData>(),
-	};
+	private readonly messageSubject$ = new Subject<SendEvent>();
+	private readonly lobbyManager: LobbyManager;
+	private readonly userManager: UserManager;
 
-	get lobby(): LobbyData {
-		const readyUsers: UserData[] = [];
-		const idleUsers: UserData[] = [];
+	constructor(state: DurableObjectState, env: Env) {
+		super(state, env);
 
-		for (const user of this._lobby.users.values()) {
-			(user.ready ? readyUsers : idleUsers).push(user);
-		}
-		return {
-			ready: readyUsers,
-			idle: idleUsers,
-			total: this._lobby.users.size,
+		const messages$ = this.messageSubject$.pipe(share());
+
+		const deps: ManagerDeps = {
+			env,
+			messages$,
+			send: this.send.bind(this),
 		};
+
+		this.lobbyManager = new LobbyManager(deps);
+		this.userManager = new UserManager(deps, this.lobbyManager);
 	}
 
-	async onStart() {
-		const keys = await this.env.SESSIONS.list();
-		for (const connection of this.getConnections<UserData>()) {
-			if (connection.state) {
-				this._lobby.users.set(connection.state.username, {
-					from: connection.state.from,
-					name: connection.state.name,
-					ready: connection.state.ready,
-					id: connection.id,
-					username: connection.state.username,
-				});
-			}
+	send<T extends keyof EventDataMap>(
+		type: T,
+		payload: EventDataMap[T],
+		...[connection]: T extends "lobby" ? [] : [Connection<UserData>]
+	) {
+		const data: EventData = { type, payload };
+		if (connection) connection.send(JSON.stringify(data));
+		if (!connection && type === "lobby") this.broadcast(JSON.stringify(data));
+	}
+
+	onMessage(connection: Connection<UserData>, message: WSMessage): void {
+		try {
+			const { type, payload } = JSON.parse(String(message));
+			this.messageSubject$.next({ type, connection, payload });
+		} catch (error) {
+			console.error("Error parsing message:", error);
+			connection.close(4400, "Invalid message format");
 		}
+	}
+
+	onStart() {
+		this.lobbyManager.init([...this.getConnections<UserData>()]);
 	}
 
 	async onConnect(
 		connection: Connection<UserData>,
 		ctx: ConnectionContext,
 	): Promise<void> {
-		const url = new URL(ctx.request.url);
-		const token = url.searchParams.get("token");
+		const token = new URL(ctx.request.url).searchParams.get("token");
 
 		if (!token) {
-			connection.close(4001, "Missing token");
-			return;
+			return connection.close(4001, "Missing token");
 		}
 
 		const data = await verify<{ username: string }>(token, this.env.JWT_SECRET);
 
-		if (typeof data?.payload?.username !== "string") {
-			connection.close(4001, "Token couldn't be verified");
-			return;
+		if (!isString(data?.payload?.username)) {
+			return connection.close(4001, "Token couldn't be verified");
 		}
 
-		const username = data.payload.username;
-
-		const sessionDataJson = await this.env.SESSIONS.get(username);
-		const sessionData = JSON.parse(sessionDataJson || "{}");
-
-		const userData: UserData = {
-			from: (ctx.request.cf?.country ?? "unknown") as string,
-			name: null,
-			ready: false,
-			username: username,
-			...sessionData,
-			id: connection.id,
-		};
-
-		await this.env.SESSIONS.put(username, JSON.stringify(userData), {
-			expirationTtl: 3600,
-		});
-		connection.setState(userData);
-		this._lobby.users.set(userData.username, userData);
-		this.sendAll("lobby", this.lobby);
+		this.userManager.hydrateUser(connection, ctx, data.payload.username);
 	}
 
-	async onClose(connection: Connection<UserData>): Promise<void> {
-		if (!connection.state) return;
-		this._lobby.users.delete(connection.state.username);
-		this.sendAll("lobby", this.lobby);
+	onClose(connection: Connection<UserData>): void {
+		this.lobbyManager.cleanupConnection(connection);
 	}
 
-	async onError(connection: Connection<UserData>, err: Error): Promise<void> {
-		console.error(err);
-		await this.onClose(connection);
-	}
-
-	async send(connection: Connection, ...args: Parameters<typeof this.sendAll>) {
-		const [type, payload] = args;
-		const data: EventData = { type, payload };
-		connection.send(JSON.stringify(data));
-	}
-
-	onMessage(
-		connection: Connection<UserData>,
-		message: WSMessage,
-	): void | Promise<void> {
-		const evt: SendEvent = JSON.parse(String(message));
-		const user = connection.state as UserData;
-		if (evt.type === "rename_user") {
-			this.updateUser(connection, { name: evt.payload as string });
-		}
-		if (evt.type === "ready_user") {
-			this.updateUser(connection, { ready: evt.payload as boolean });
-		}
-		if (evt.type === "get_user") {
-			this.send(connection, "user", this.getUser(user.username));
-			return;
-		}
-		if (evt.type === "get_lobby") {
-			this.send(connection, "lobby", this.lobby);
-			return;
-		}
-	}
-
-	private async updateUser(connection: Connection, data: Partial<UserData>) {
-		const user = connection.state as UserData;
-		const updatedUser = { ...user, ...data };
-		this._lobby.users.set(updatedUser.username, updatedUser);
-		connection.setState(updatedUser);
-
-		await this.env.SESSIONS.put(user.username, JSON.stringify(updatedUser), {
-			expirationTtl: 3600,
-		});
-		this.send(connection, "user", updatedUser);
-		this.sendAll("lobby", this.lobby);
-	}
-
-	private getUser(username: string): UserData | null {
-		return this._lobby.users.get(username) as UserData;
-	}
-
-	private sendAll<T extends keyof EventDataMap>(
-		type: T,
-		payload: EventDataMap[T],
-	): void {
-		const data: EventData = { type, payload };
-		this.broadcast(JSON.stringify(data));
+	onError(connection: Connection<UserData>, err: Error): void {
+		console.error(connection, err);
+		this.lobbyManager.cleanupConnection(connection);
 	}
 }
 
