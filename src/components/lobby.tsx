@@ -23,10 +23,20 @@ export const Lobby = () => {
 						header={`Ready (${lobby.ready.length})`}
 						buttonProps={{
 							className:
-								"p-1.5 bg-slate-300/70 w-full flex justify-between text-xs font-semibold pointer-events-none",
+								"p-1.5 bg-slate-300/70 w-full flex justify-between text-xs font-semibold",
 						}}
-						contentProps={{ className: "transition-[height]" }}
-						panelProps={{ className: "p-1.5" }}
+						disabled
+						contentProps={{
+							className: "transition-[height]",
+							onClick: (e) => {
+								if (e.target instanceof HTMLElement) {
+									const buttonElement = e.target.closest(
+										"[data-username]",
+									) as HTMLButtonElement;
+									console.log(buttonElement.dataset.username);
+								}
+							},
+						}}
 					>
 						{lobby.ready.length > 0 ? (
 							<UsersList users={lobby.ready} />
@@ -52,7 +62,6 @@ export const Lobby = () => {
 									"p-1.5 bg-slate-300/70 w-full flex justify-between cursor-pointer text-xs font-semibold",
 							}}
 							contentProps={{ className: "transition-[height]" }}
-							panelProps={{ className: "p-1.5" }}
 						>
 							<UsersList users={lobby.idle} />
 						</AccordionItem>
@@ -65,10 +74,14 @@ export const Lobby = () => {
 
 const UsersList = ({ users }: { users: UserData[] }) => {
 	return (
-		<ul className="space-y-1.5">
+		<ul>
 			{users.map((user) => (
 				<li key={user.id}>
-					<button type="button" className="flex gap-2 items-center">
+					<button
+						type="button"
+						className="flex gap-2 items-center p-1.5 w-full hover:bg-slate-300/30 transition-colors cursor-pointer"
+						data-username={user.username}
+					>
 						<span
 							className={`${user.ready ? "bg-green-500/75" : "bg-gray-300"} transition-colors size-1.5 rounded-full`}
 						/>
