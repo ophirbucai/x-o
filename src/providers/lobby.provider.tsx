@@ -45,7 +45,7 @@ export const LobbyProvider = ({ children }: { children: React.ReactNode }) => {
 	);
 };
 
-export function useLobbyStore<T>(selector: (store: LobbyState) => T): T {
+export function useLobby<T>(selector: (store: LobbyState) => T): T {
 	const store = useContext(LobbyContext);
 	if (!store) {
 		throw new Error("useLobbyStore must be used within LobbyProvider");

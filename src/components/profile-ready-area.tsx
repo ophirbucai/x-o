@@ -1,9 +1,9 @@
 import ReactSwitch from "react-switch";
-import { useUserStore } from "../providers/user.provider";
+import { useUser } from "../providers/user.provider";
 import { useCallback } from "react";
 
 export const ProfileReadyArea = () => {
-	const { user, updateReady } = useUserStore((state) => state);
+	const { user, updateReady } = useUser((state) => state);
 
 	const toggleReady = useCallback(
 		(checked: boolean) => updateReady(checked),

@@ -1,8 +1,8 @@
 import { countryCodeEmoji } from "../utils";
-import { useLobbyStore } from "../providers/lobby.provider";
+import { useLobby } from "../providers/lobby.provider";
 
 export const Lobby = () => {
-	const lobby = useLobbyStore((state) => state.lobby);
+	const lobby = useLobby((state) => state.lobby);
 
 	if (!lobby) return "Loading...";
 

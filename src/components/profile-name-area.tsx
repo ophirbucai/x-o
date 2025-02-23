@@ -1,8 +1,8 @@
 import { useCallback } from "react";
-import { useUserStore } from "../providers/user.provider";
+import { useUser } from "../providers/user.provider";
 
 export const ProfileNameArea = () => {
-	const { user, renameUser } = useUserStore((state) => state);
+	const { user, renameUser } = useUser((state) => state);
 
 	const submitName = useCallback(
 		(e: React.FormEvent<HTMLFormElement>) => {

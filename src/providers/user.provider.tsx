@@ -56,7 +56,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 	);
 };
 
-export function useUserStore<T>(selector: (store: UserState) => T): T {
+export function useUser<T>(selector: (store: UserState) => T): T {
 	const store = useContext(UserContext);
 	if (!store) {
 		throw new Error("useUserStore must be used within UserProvider");
