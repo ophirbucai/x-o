@@ -1,12 +1,13 @@
 import type PartySocket from "partysocket";
 import usePartySocket from "partysocket/react";
-import { createContext, useContext, useRef } from "react";
+import { createContext, useCallback, useContext, useRef } from "react";
 import { Subject } from "rxjs";
-import type { EventData } from "../types/event-data.type";
+import type { EventData, SendMethod, SendEvent, SendEventMap } from "../types";
 
 const PartyContext = createContext<{
 	socket: PartySocket;
 	message$: Subject<EventData>;
+	send: typeof SendMethod;
 } | null>(null);
 
 export const PartyProvider = ({ children }: { children: React.ReactNode }) => {
@@ -19,7 +20,21 @@ export const PartyProvider = ({ children }: { children: React.ReactNode }) => {
 			message$.next(JSON.parse(evt.data)),
 	});
 
-	return <PartyContext value={{ socket, message$ }}>{children}</PartyContext>;
+	const send: typeof SendMethod = useCallback(
+		(type, ...args) => {
+			const payload = args[0];
+			const data: SendEvent = {
+				type,
+				payload: payload as SendEventMap[typeof type],
+			};
+			socket.send(JSON.stringify(data));
+		},
+		[socket.send],
+	);
+
+	return (
+		<PartyContext value={{ socket, message$, send }}>{children}</PartyContext>
+	);
 };
 
 export const useParty = () => {

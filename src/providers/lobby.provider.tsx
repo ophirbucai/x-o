@@ -1,5 +1,5 @@
-import { createContext, useContext, useEffect, useRef, useState } from "react";
-import type { LobbyData } from "../types/lobby-data.type";
+import { createContext, useContext, useEffect, useRef } from "react";
+import type { LobbyData } from "../types";
 import { useParty } from "./party.provider";
 import { filter } from "rxjs/operators";
 import { useStore } from "zustand/react";
@@ -20,7 +20,7 @@ export const LobbyContext = createContext<LobbyStore | null>(null);
 
 export const LobbyProvider = ({ children }: { children: React.ReactNode }) => {
 	const store = useRef<LobbyStore>(null);
-	const { socket, message$ } = useParty();
+	const { send, message$ } = useParty();
 
 	if (!store.current) {
 		store.current = createLobbyStore();
@@ -33,10 +33,10 @@ export const LobbyProvider = ({ children }: { children: React.ReactNode }) => {
 				store.current?.setState({ [type]: payload }),
 			);
 
-		socket.send("lobby");
+		send("get_lobby");
 
 		return () => subscription.unsubscribe();
-	}, [socket.send, message$]);
+	}, [send, message$]);
 
 	return (
 		<LobbyContext.Provider value={store.current}>

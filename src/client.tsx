@@ -1,16 +1,18 @@
 import "./assets/styles.css";
 import { createRoot } from "react-dom/client";
-import { Lobby } from "./components/lobby";
 import { PartyProvider } from "./providers/party.provider";
 import { LobbyProvider } from "./providers/lobby.provider";
+import { UserProvider } from "./providers/user.provider";
+import { Dashboard } from "./components/dashboard";
 
 function App() {
 	return (
 		<PartyProvider>
-			<LobbyProvider>
-				<Lobby />
-				{/* <Board /> */}
-			</LobbyProvider>
+			<UserProvider>
+				<LobbyProvider>
+					<Dashboard />
+				</LobbyProvider>
+			</UserProvider>
 		</PartyProvider>
 	);
 }

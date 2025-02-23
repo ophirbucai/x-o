@@ -1,7 +1,8 @@
-import type { LobbyData } from "./lobby-data.type";
+import type { LobbyData, UserData } from ".";
 
 export type EventDataMap = {
 	lobby: LobbyData;
+	user: UserData | null;
 };
 
 export type EventData<T extends keyof EventDataMap = keyof EventDataMap> = {

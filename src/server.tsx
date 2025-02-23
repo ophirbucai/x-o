@@ -1,7 +1,12 @@
 import type { Connection, ConnectionContext, WSMessage } from "partyserver";
 import { Server, routePartykitRequest } from "partyserver";
-import type { EventData, EventDataMap } from "./types/event-data.type";
-import type { LobbyData } from "./types/lobby-data.type";
+import type {
+	EventData,
+	EventDataMap,
+	LobbyData,
+	SendEvent,
+	UserData,
+} from "./types";
 
 type Env = {
 	MyServer: DurableObjectNamespace<MyServer>;
@@ -10,21 +15,26 @@ type Env = {
 const FROM_FALLBACK_KEY = "?";
 
 export class MyServer extends Server<Env> {
-	lobby: LobbyData = {
-		total: 0,
-		from: {},
+	_lobby = {
+		users: new Map<string, UserData>(),
 	};
+
+	get lobby(): LobbyData {
+		return {
+			users: [...this._lobby.users.values()],
+			total: this._lobby.users.size,
+		};
+	}
 
 	onStart(): void | Promise<void> {
 		for (const connection of this.getConnections<{ from: string }>()) {
 			const from = connection.state?.from || FROM_FALLBACK_KEY;
-			this.lobby = {
-				total: this.lobby.total + 1,
-				from: {
-					...this.lobby.from,
-					[from]: (this.lobby.from[from] ?? 0) + 1,
-				},
-			};
+			this._lobby.users.set(connection.id, {
+				from,
+				name: null,
+				ready: false,
+				id: connection.id,
+			});
 		}
 	}
 
@@ -33,26 +43,19 @@ export class MyServer extends Server<Env> {
 		ctx: ConnectionContext,
 	): Promise<void> {
 		const from = (ctx.request.cf?.country ?? "unknown") as string;
-		this.lobby = {
-			total: this.lobby.total + 1,
-			from: {
-				...this.lobby.from,
-				[from]: (this.lobby.from[from] ?? 0) + 1,
-			},
+		const user: UserData = {
+			from,
+			name: null,
+			ready: false,
+			id: connection.id,
 		};
+		this._lobby.users.set(connection.id, user);
 		connection.setState({ from });
 		this.sendAll("lobby", this.lobby);
 	}
 
 	async onClose(connection: Connection<{ from: string }>): Promise<void> {
-		const from = connection.state?.from ?? FROM_FALLBACK_KEY;
-		this.lobby = {
-			total: this.lobby.total - 1,
-			from: {
-				...this.lobby.from,
-				[from]: (this.lobby.from[from] ?? 0) - 1,
-			},
-		};
+		this._lobby.users.delete(connection.id);
 		this.sendAll("lobby", this.lobby);
 	}
 
@@ -70,11 +73,35 @@ export class MyServer extends Server<Env> {
 		connection.send(JSON.stringify(data));
 	}
 
-	onMessage(
-		connection: Connection,
-		message: WSMessage | keyof EventDataMap,
-	): void | Promise<void> {
-		if (message === "lobby") this.send(connection, "lobby", this.lobby);
+	onMessage(connection: Connection, message: WSMessage): void | Promise<void> {
+		const evt: SendEvent = JSON.parse(String(message));
+		if (evt.type === "rename_user") {
+			this.updateUser(connection, { name: evt.payload as string });
+			this.send(connection, "user", this.getUser(connection.id));
+		}
+		if (evt.type === "ready_user") {
+			this.updateUser(connection, { ready: evt.payload as boolean });
+			this.send(connection, "user", this.getUser(connection.id));
+		}
+		if (evt.type === "get_user") {
+			this.send(connection, "user", this.getUser(connection.id));
+			return;
+		}
+		if (evt.type === "get_lobby") {
+			this.send(connection, "lobby", this.lobby);
+			return;
+		}
+	}
+
+	private updateUser(connection: Connection, data: Partial<UserData>) {
+		const user = this.getUser(connection.id);
+		connection.setState({ ...user, ...data });
+		this._lobby.users.set(connection.id, connection.state as UserData);
+		this.sendAll("lobby", this.lobby);
+	}
+
+	private getUser(id: string): UserData | null {
+		return this._lobby.users.get(id) as UserData;
 	}
 
 	private sendAll<T extends keyof EventDataMap>(
