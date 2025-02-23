@@ -20,8 +20,15 @@ export class MyServer extends Server<Env> {
 	};
 
 	get lobby(): LobbyData {
+		const readyUsers: UserData[] = [];
+		const idleUsers: UserData[] = [];
+
+		for (const user of this._lobby.users.values()) {
+			(user.ready ? readyUsers : idleUsers).push(user);
+		}
 		return {
-			users: [...this._lobby.users.values()],
+			ready: readyUsers,
+			idle: idleUsers,
 			total: this._lobby.users.size,
 		};
 	}
@@ -43,11 +50,19 @@ export class MyServer extends Server<Env> {
 		ctx: ConnectionContext,
 	): Promise<void> {
 		const from = (ctx.request.cf?.country ?? "unknown") as string;
+		// const userId = ctx.request.headers.get("X-User-Id");
+		// const userRole = ctx.request.headers.get("X-User-Role");
+
+		// if (!userId) {
+		// 	connection.close(4001, "Unauthorized");
+		// 	return;
+		// }
 		const user: UserData = {
 			from,
 			name: null,
 			ready: false,
 			id: connection.id,
+			// role: userRole,
 		};
 		this._lobby.users.set(connection.id, user);
 		connection.setState({ from });
