@@ -52,7 +52,7 @@ export class RoomManager extends BaseManager {
 		if (payload.name) {
 			room.name = payload.name;
 		}
-		if (payload.isActive) {
+		if (payload.isActive !== undefined) {
 			room.isActive = payload.isActive;
 		}
 
