@@ -6,11 +6,11 @@ export class Room implements RoomDataWithRelations {
 	name: string;
 	readonly createdAt: string | Date;
 	readonly owner: UserData;
-	_viewers: UserData[] = [];
+	_viewers = new Set<UserData["id"]>();
 	learningGoal: string;
 
 	public get viewersCount() {
-		return this._viewers.length;
+		return this._viewers.size;
 	}
 
 	private generateRoomId(): RoomId {

@@ -11,7 +11,7 @@ export type RoomData = {
 };
 
 export type RoomRelations = {
-	_viewers: UserData[];
+	_viewers: Set<UserData["id"]>;
 };
 
 export type RoomDataWithRelations = RoomData & RoomRelations;

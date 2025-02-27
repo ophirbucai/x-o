@@ -1,10 +1,15 @@
 import { BaseManager } from "./base-manager";
 import { Room } from "../models/room";
 import { filterSendEvent } from "../utils/filter-send-event";
-import type { RoomData, RoomId, SendEvent } from "../../types";
+import type {
+	RoomData,
+	RoomDataWithRelations,
+	RoomId,
+	SendEvent,
+} from "../../types";
 
 export class RoomManager extends BaseManager {
-	private _rooms = new Map<RoomId, RoomData>();
+	private _rooms = new Map<RoomId, RoomDataWithRelations>();
 
 	protected setupSubscriptions(): void {
 		const subject = this.deps.messages$;
@@ -16,6 +21,10 @@ export class RoomManager extends BaseManager {
 		subject
 			.pipe(filterSendEvent("get_rooms"))
 			.subscribe(this.getRooms.bind(this));
+
+		subject
+			.pipe(filterSendEvent("join_room", "leave_room"))
+			.subscribe(this.leaveOrJoinRoom.bind(this));
 	}
 
 	createRoom({ payload }: SendEvent<"create_room">) {
@@ -28,6 +37,34 @@ export class RoomManager extends BaseManager {
 		const activeRooms = this.getActiveRooms();
 
 		this.deps.send("rooms", activeRooms, connection);
+	}
+
+	private getRoomById(roomId: RoomId): RoomDataWithRelations | null {
+		return this._rooms.get(roomId) ?? null;
+	}
+
+	leaveOrJoinRoom({
+		type,
+		payload: roomId,
+		connection,
+	}: SendEvent<"join_room" | "leave_room">) {
+		const room = this.getRoomById(roomId);
+
+		if (!room)
+			return; /* Room closed, todo: navigate the user back to the lobby */
+
+		const viewerId = connection.state?.id;
+
+		if (!viewerId) return;
+
+		if (type === "join_room") {
+			room._viewers.add(viewerId);
+		}
+		if (type === "leave_room") {
+			room._viewers.delete(viewerId);
+		}
+
+		this.broadcastRooms();
 	}
 
 	broadcastRooms(): void {
