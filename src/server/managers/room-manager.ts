@@ -16,13 +16,6 @@ export class RoomManager extends BaseManager {
 		subject
 			.pipe(filterSendEvent("get_rooms"))
 			.subscribe(this.getRooms.bind(this));
-
-		// Todo:
-		// create_room V
-		// get_rooms V
-		// join_room
-		// leave_room
-		// update_room
 	}
 
 	createRoom({ payload }: SendEvent<"create_room">) {
