@@ -7,6 +7,7 @@ import type {
 	RoomId,
 	SendEvent,
 } from "../../types";
+import { filter } from "rxjs/operators";
 
 export class RoomManager extends BaseManager {
 	private _rooms = new Map<RoomId, RoomDataWithRelations>();
@@ -25,6 +26,39 @@ export class RoomManager extends BaseManager {
 		subject
 			.pipe(filterSendEvent("join_room", "leave_room"))
 			.subscribe(this.leaveOrJoinRoom.bind(this));
+
+		subject
+			.pipe(filterSendEvent("update_room"))
+			.pipe(filter(this.isRoomOwner.bind(this)))
+			.subscribe(this.updateRoom.bind(this));
+	}
+
+	private isRoomOwner(evt: SendEvent<"update_room">): boolean {
+		const room = this.getRoomById(evt.payload.id);
+
+		if (!room) return false;
+
+		return room.owner.id === evt.connection.state?.id;
+	}
+
+	updateRoom({ payload }: SendEvent<"update_room">) {
+		const room = this.getRoomById(payload.id);
+
+		if (!room) return;
+
+		if (payload.learningGoal) {
+			room.learningGoal = payload.learningGoal;
+		}
+		if (payload.name) {
+			room.name = payload.name;
+		}
+		if (payload.isActive) {
+			room.isActive = payload.isActive;
+		}
+
+		this._rooms.set(room.id, room);
+
+		this.broadcastRooms();
 	}
 
 	createRoom({ payload }: SendEvent<"create_room">) {
