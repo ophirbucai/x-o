@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { RoomDataWithRelations, RoomId, UserData } from "../../types";
 
 export class Room implements RoomDataWithRelations {
@@ -14,7 +15,7 @@ export class Room implements RoomDataWithRelations {
 	}
 
 	private generateRoomId(): RoomId {
-		return `room_${crypto.randomUUID()}`;
+		return `room_${randomUUID()}`;
 	}
 
 	constructor(values: {
