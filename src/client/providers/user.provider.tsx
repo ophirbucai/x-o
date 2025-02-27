@@ -1,15 +1,9 @@
-import {
-	createContext,
-	useCallback,
-	useContext,
-	useEffect,
-	useRef,
-} from "react";
+import { createContext, useContext, useEffect, useRef } from "react";
 import { useStore } from "zustand/react";
 import { createStore } from "zustand";
 import { useParty } from "./party.provider";
-import { filter } from "rxjs";
 import type { SendMethod, UserData } from "../../types";
+import { filterEventData } from "../utils/filter-event-data";
 
 interface UserState {
 	user: UserData | null;
@@ -40,10 +34,8 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
 
 	useEffect(() => {
 		const subscription = message$
-			.pipe(filter((evt) => evt.type === "user"))
-			.subscribe(({ type, payload }) =>
-				store.current?.setState({ [type]: payload }),
-			);
+			.pipe(filterEventData("user"))
+			.subscribe(({ payload }) => store.current?.setState({ user: payload }));
 
 		send("get_user");
 

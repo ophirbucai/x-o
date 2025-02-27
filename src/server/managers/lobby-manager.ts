@@ -1,7 +1,7 @@
 import type { Connection } from "partyserver";
 import type { LobbyData, UserData } from "../../types";
 import { BaseManager } from "./base-manager";
-import { filter } from "rxjs/operators";
+import { filterSendEvent } from "../utils/filter-send-event";
 
 export class LobbyManager extends BaseManager {
 	_lobby = {
@@ -23,8 +23,8 @@ export class LobbyManager extends BaseManager {
 	}
 	protected setupSubscriptions(): void {
 		this.deps.messages$
-			.pipe(filter(({ type }) => type === "get_lobby"))
-			.subscribe(() => this.broadcastLobby());
+			.pipe(filterSendEvent("get_lobby"))
+			.subscribe(this.broadcastLobby.bind(this));
 	}
 
 	public broadcastLobby() {

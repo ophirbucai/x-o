@@ -1,9 +1,9 @@
 import { createContext, useContext, useEffect, useRef } from "react";
 import type { LobbyData } from "../../types";
 import { useParty } from "./party.provider";
-import { filter } from "rxjs/operators";
 import { useStore } from "zustand/react";
 import { createStore } from "zustand";
+import { filterEventData } from "../utils/filter-event-data";
 
 interface LobbyState {
 	lobby: LobbyData | null;
@@ -28,10 +28,8 @@ export const LobbyProvider = ({ children }: { children: React.ReactNode }) => {
 
 	useEffect(() => {
 		const subscription = message$
-			.pipe(filter((data) => data.type === "broadcast_lobby"))
-			.subscribe(({ type, payload }) =>
-				store.current?.setState({ [type]: payload }),
-			);
+			.pipe(filterEventData("broadcast_lobby"))
+			.subscribe(({ payload }) => store.current?.setState({ lobby: payload }));
 
 		send("get_lobby");
 
