@@ -1,4 +1,4 @@
-import type { XO } from "../types/xo.type";
+import type { XO } from "../../types";
 
 interface Props {
 	value: XO | null;

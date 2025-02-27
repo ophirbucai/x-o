@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useRef } from "react";
-import type { LobbyData } from "../types";
+import type { LobbyData } from "../../types";
 import { useParty } from "./party.provider";
 import { filter } from "rxjs/operators";
 import { useStore } from "zustand/react";
@@ -28,7 +28,7 @@ export const LobbyProvider = ({ children }: { children: React.ReactNode }) => {
 
 	useEffect(() => {
 		const subscription = message$
-			.pipe(filter((data) => data.type === "lobby"))
+			.pipe(filter((data) => data.type === "broadcast_lobby"))
 			.subscribe(({ type, payload }) =>
 				store.current?.setState({ [type]: payload }),
 			);

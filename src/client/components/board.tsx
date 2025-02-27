@@ -1,8 +1,7 @@
 import { useRef, useState } from "react";
 import { Square } from "./square";
-import type { InteractionEvent } from "../types/interaction-event.type";
+import type { InteractionEvent, XO } from "../../types";
 import { calculateWinner, isButtonElement, keyEventFilter } from "../utils";
-import type { XO } from "../types/xo.type";
 
 export const Board = () => {
 	const boardRef = useRef<HTMLDivElement>(null);

@@ -38,7 +38,7 @@ export const PartyProvider = ({ children }: { children: React.ReactNode }) => {
 	const send: typeof SendMethod = useCallback(
 		(type, ...args) => {
 			const payload = args[0];
-			const data: SendEvent = {
+			const data: Omit<SendEvent, "connection"> = {
 				type,
 				payload: payload as SendEventMap[typeof type],
 			};
