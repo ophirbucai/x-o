@@ -5,3 +5,4 @@ export * from "./interaction-event.type";
 export * from "./xo.type";
 export * from "./env.type";
 export * from "./manager-deps.type";
+export * from "./room.type";

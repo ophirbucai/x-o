@@ -10,6 +10,6 @@ export type ManagerDeps = {
 	send: <T extends keyof EventDataMap>(
 		type: T,
 		payload: EventDataMap[T],
-		...conn: T extends "lobby" ? [] : [Connection<UserData>]
+		...conn: T extends `broadcast_${string}` ? [] : [Connection<UserData>]
 	) => void;
 };

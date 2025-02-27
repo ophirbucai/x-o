@@ -28,7 +28,7 @@ export class LobbyManager extends BaseManager {
 	}
 
 	public broadcastLobby() {
-		this.deps.send("lobby", this.lobby);
+		this.deps.send("broadcast_lobby", this.lobby);
 	}
 
 	public updateUser(user: UserData) {
