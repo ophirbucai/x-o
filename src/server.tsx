@@ -19,11 +19,13 @@ import { share, Subject } from "rxjs";
 import { LobbyManager } from "./server/managers/lobby-manager";
 import { UserManager } from "./server/managers/user-manager";
 import { isString } from "./server/utils/is-string";
+import { RoomManager } from "./server/managers/room-manager";
 
 export class MyServer extends Server<Env> {
 	private readonly messageSubject$ = new Subject<SendEvent>();
 	private readonly lobbyManager: LobbyManager;
 	private readonly userManager: UserManager;
+	private readonly roomManager: RoomManager;
 
 	constructor(state: DurableObjectState, env: Env) {
 		super(state, env);
@@ -38,6 +40,7 @@ export class MyServer extends Server<Env> {
 
 		this.lobbyManager = new LobbyManager(deps);
 		this.userManager = new UserManager(deps, this.lobbyManager);
+		this.roomManager = new RoomManager(deps);
 	}
 
 	send<T extends keyof EventDataMap>(
