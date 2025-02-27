@@ -43,11 +43,14 @@ export class MyServer extends Server<Env> {
 	send<T extends keyof EventDataMap>(
 		type: T,
 		payload: EventDataMap[T],
-		...[connection]: T extends "lobby" ? [] : [Connection<UserData>]
+		...[connection]: T extends `broadcast_${string}`
+			? []
+			: [Connection<UserData>]
 	) {
 		const data: EventData = { type, payload };
 		if (connection) connection.send(JSON.stringify(data));
-		if (!connection && type === "lobby") this.broadcast(JSON.stringify(data));
+		if (!connection && type.startsWith("broadcast_"))
+			this.broadcast(JSON.stringify(data));
 	}
 
 	onMessage(connection: Connection<UserData>, message: WSMessage): void {
